@@ -196,15 +196,27 @@ class ExcelParser:
                         options = formula.split(',')
                         expanded_options = []
                         for option in options:
-                            cell_refs = expand_cell_range(option)
-                            for cell_ref in cell_refs:
-                                # Clean the cell reference by removing dollar signs
-                                clean_cell_ref = cell_ref.replace('$', '')
-                                expanded_options.append({
-                                    "cell_ref": clean_cell_ref,
-                                    "sheet_name": current_sheet_name,
-                                    "workbook_name": workbook_name
-                                })
+                            option = option.strip()
+                            if '!' in option:
+                                sheet_name_option, range_part = option.split('!', 1)
+                                cell_refs = expand_cell_range(range_part)
+                                for cell_ref in cell_refs:
+                                    clean_cell_ref = cell_ref.replace('$', '')
+                                    expanded_options.append({
+                                        "cell_ref": clean_cell_ref,
+                                        "sheet_name": sheet_name_option,
+                                        "workbook_name": workbook_name
+                                    })
+                            else:
+                                cell_refs = expand_cell_range(option)
+                                for cell_ref in cell_refs:
+                                    clean_cell_ref = cell_ref.replace('$', '')
+                                    expanded_options.append({
+                                        "cell_ref": clean_cell_ref,
+                                        "sheet_name": current_sheet_name,
+                                        "workbook_name": workbook_name
+                                    })
+                        logger.info(f"Expanded options: {expanded_options}")
                         return expanded_options
         return []
     
@@ -249,12 +261,12 @@ class ExcelParser:
                     continue  # skip ranges
                 
                 # Add to forward mapping (cell_ref -> alias)
-                self.alias_mapping.setdefault(sheet_name, {})[cell_range_clean.upper()] = alias
+                self.alias_mapping.setdefault(sheet_name, {})[cell_range_clean] = alias
                 
                 # Add to reverse mapping (alias -> cell_ref)
                 self.reverse_alias_mapping[alias] = {
                     'sheet_name': sheet_name,
-                    'cell_ref': cell_range_clean.upper()
+                    'cell_ref': cell_range_clean
                 }
         
         total_aliases = sum(len(sheet_aliases) for sheet_aliases in self.alias_mapping.values())
@@ -302,7 +314,7 @@ class ExcelParser:
         # Check if this cell has an alias
         alias = None
         if sheet_name in self.alias_mapping:
-            alias = self.alias_mapping[sheet_name].get(cell_ref.upper())
+            alias = self.alias_mapping[sheet_name].get(cell_ref)
         
         # Log cell information
         logger.debug(f"Cell {sheet_name}!{cell_ref}: type={cell_type}, data_type={data_type}, value={excel_cell.value}, alias={alias}")

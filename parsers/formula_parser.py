@@ -17,6 +17,7 @@ def expand_cell_range(range_ref: str) -> List[str]:
     sheet_name = None
     if '!' in range_ref:
         sheet_name, range_ref = range_ref.split('!')
+        sheet_name = sheet_name.lower()
     
     # Split the range into start and end cells
     start_cell, end_cell = range_ref.split(':')
@@ -56,7 +57,6 @@ def expand_cell_range(range_ref: str) -> List[str]:
             if sheet_name:
                 cell_ref = f"{sheet_name}!{cell_ref}"
             cells.append(cell_ref)
-    
     return cells
 
 def extract_formula_inputs(formula: str) -> Dict[str, Optional[str]]:
