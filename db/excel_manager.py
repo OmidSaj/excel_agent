@@ -68,6 +68,73 @@ class ExcelDatabase:
             logger.error(f"Error processing {self.spreadsheet_path.name}: {str(e)}")
             return False
     
+    def delete_spreadsheet(self, name: Optional[str] = None, filename: Optional[str] = None) -> bool:
+        """
+        Delete a spreadsheet and all its cells from the database.
+        
+        Args:
+            name: The name of the spreadsheet to delete
+            filename: The original filename of the spreadsheet to delete
+            
+        Returns:
+            bool: True if deletion was successful, False otherwise
+        """
+        if not (name or filename):
+            logger.error("Either name or filename must be specified for deletion")
+            return False
+            
+        try:
+            # Find the spreadsheet to delete
+            query = {}
+            if name:
+                query['name'] = name
+            if filename:
+                query['original_filename'] = filename
+                
+            spreadsheet = Spreadsheet.objects(**query).first()
+            
+            if not spreadsheet:
+                logger.error(f"Spreadsheet not found with query: {query}")
+                return False
+                
+            # Get the spreadsheet ID before deletion for logging
+            spreadsheet_id = str(spreadsheet.id)
+            spreadsheet_name = spreadsheet.name
+            
+            # Count cells before deletion for logging
+            cell_count = len(spreadsheet.cells)
+            
+            # Delete the spreadsheet which will delete all its reference cells due to
+            # the cascade delete behavior defined in the model
+            spreadsheet.delete()
+            
+            logger.info(f"Deleted spreadsheet '{spreadsheet_name}' (ID: {spreadsheet_id}) with {cell_count} cells")
+            return True
+                
+        except Exception as e:
+            logger.error(f"Error deleting spreadsheet: {str(e)}")
+            return False
+    
+    def reparse_spreadsheet(self, name: Optional[str] = None, filename: Optional[str] = None) -> bool:
+        """
+        Delete an existing spreadsheet from the database and reparse it.
+        
+        Args:
+            name: The name of the spreadsheet to reparse
+            filename: The original filename of the spreadsheet to reparse
+            
+        Returns:
+            bool: True if reparsing was successful, False otherwise
+        """
+        # Delete the existing spreadsheet if it exists
+        if name or filename:
+            deleted = self.delete_spreadsheet(name=name, filename=filename)
+            if not deleted:
+                logger.warning("No existing spreadsheet was deleted. Continuing with parsing.")
+        
+        # Load the spreadsheet
+        return self.load_spreadsheet()
+    
     def get_spreadsheet_data(self, name: Optional[str] = None, filename: Optional[str] = None, 
                       limit: int = 10, as_dict: bool = False) -> Union[List[Union[Spreadsheet, Dict[str, Any]]], 
                                                                      Optional[Union[Spreadsheet, Dict[str, Any]]]]:
@@ -172,6 +239,11 @@ class ExcelDatabase:
             # If sheet_name not provided, use active sheet
             if sheet_name is None:
                 sheet_name = self.spreadsheet.active_sheet
+            
+            # Verify that the sheet exists in the spreadsheet
+            if sheet_name not in self.spreadsheet.sheet_names:
+                logger.error(f"Sheet '{sheet_name}' not found in spreadsheet")
+                return None
             
             # Find the cell
             cell = self.spreadsheet.get_cell_by_reference(cell_reference, sheet_name)
