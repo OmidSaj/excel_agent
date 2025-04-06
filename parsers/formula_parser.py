@@ -81,7 +81,7 @@ def extract_formula_inputs(formula: str) -> Dict[str, Optional[str]]:
         print(f"Error parsing formula {formula}: {str(e)}")
         return {}
 
-def update_cell_dependencies(spreadsheet: Spreadsheet, cell: Cell, workbook_name: str = None) -> None:
+def update_cell_dependencies(spreadsheet: Spreadsheet, cell: Cell, workbook_name: str = None, reverse_alias_mapping: Dict[str, Dict[str, str]] = None) -> None:
     """
     Update the dependencies for a cell containing a formula.
     This includes:
@@ -93,6 +93,7 @@ def update_cell_dependencies(spreadsheet: Spreadsheet, cell: Cell, workbook_name
         spreadsheet: The Spreadsheet document containing the cell
         cell: The Cell document containing the formula
         workbook_name: The name of the workbook containing the cell
+        reverse_alias_mapping: Dictionary mapping aliases to cell references, used for resolving aliases in formulas
     """
     if not cell.formula:
         return
@@ -102,14 +103,20 @@ def update_cell_dependencies(spreadsheet: Spreadsheet, cell: Cell, workbook_name
     
     # Process each input
     for cell_ref, _ in inputs.items():
-        # Skip non-cell inputs (like named ranges or constants)
+        # Skip non-cell inputs (like constants)
         if not cell_ref or cell_ref.isdigit():
             continue
             
-        # Handle sheet-qualified references (e.g., "Sheet1!A1")
-        sheet_name = cell.sheet_name  # Default to the current cell's sheet name
-        if '!' in cell_ref:
-            sheet_name, cell_ref = cell_ref.split('!')
+        # Check if this is an alias and resolve it to a standard cell reference
+        if reverse_alias_mapping and cell_ref in reverse_alias_mapping:
+            alias_info = reverse_alias_mapping[cell_ref]
+            sheet_name = alias_info['sheet_name']
+            cell_ref = alias_info['cell_ref']
+        else:
+            # Handle sheet-qualified references (e.g., "Sheet1!A1")
+            sheet_name = cell.sheet_name  # Default to the current cell's sheet name
+            if '!' in cell_ref:
+                sheet_name, cell_ref = cell_ref.split('!')
             
         # Check if this is a range reference (e.g., "B1:C10")
         if ':' in cell_ref:

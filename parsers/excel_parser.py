@@ -44,6 +44,8 @@ class ExcelParser:
         self.file_path = file_path
         self.spreadsheet = None
         self.workbook = None
+        self.alias_mapping = {}
+        self.reverse_alias_mapping = {}  # Maps aliases to cell references
     
     def parse(self) -> Spreadsheet:
         """
@@ -73,6 +75,9 @@ class ExcelParser:
         
         # Open the workbook
         self.workbook = openpyxl.load_workbook(self.file_path, data_only=False)
+        
+        # Build alias mapping from defined names
+        self._build_alias_mapping()
         
         # Get sheet names and set active sheet
         self.spreadsheet.sheet_names = self.workbook.sheetnames
@@ -228,6 +233,33 @@ class ExcelParser:
 
         return min_col <= col <= max_col and min_row <= row <= max_row
     
+    def _build_alias_mapping(self) -> None:
+        """
+        Build a mapping of cell references to their aliases (defined names)
+        and a reverse mapping from aliases to cell references.
+        """
+        logger.info("Building alias mapping from defined names")
+        self.alias_mapping = {}
+        self.reverse_alias_mapping = {}  # Maps aliases to cell references
+        
+        for alias, defined_name in self.workbook.defined_names.items():
+            for sheet_name, cell_range in defined_name.destinations:
+                cell_range_clean = cell_range.replace('$', '')
+                if ':' in cell_range_clean:
+                    continue  # skip ranges
+                
+                # Add to forward mapping (cell_ref -> alias)
+                self.alias_mapping.setdefault(sheet_name, {})[cell_range_clean.upper()] = alias
+                
+                # Add to reverse mapping (alias -> cell_ref)
+                self.reverse_alias_mapping[alias] = {
+                    'sheet_name': sheet_name,
+                    'cell_ref': cell_range_clean.upper()
+                }
+        
+        total_aliases = sum(len(sheet_aliases) for sheet_aliases in self.alias_mapping.values())
+        logger.info(f"Found {total_aliases} cell aliases across {len(self.alias_mapping)} sheets")
+
     def _create_cell_document(self, excel_cell: openpyxl.cell.Cell, 
                               row: int, column: int, sheet_name: str) -> Cell:
         """
@@ -267,8 +299,13 @@ class ExcelParser:
         if cell_type == "valuelist":
             validation_options = self._get_validation_options(excel_cell)
         
+        # Check if this cell has an alias
+        alias = None
+        if sheet_name in self.alias_mapping:
+            alias = self.alias_mapping[sheet_name].get(cell_ref.upper())
+        
         # Log cell information
-        logger.debug(f"Cell {sheet_name}!{cell_ref}: type={cell_type}, data_type={data_type}, value={excel_cell.value}")
+        logger.debug(f"Cell {sheet_name}!{cell_ref}: type={cell_type}, data_type={data_type}, value={excel_cell.value}, alias={alias}")
         
         # Create the Cell document
         cell_doc = Cell(
@@ -277,6 +314,7 @@ class ExcelParser:
             cell_reference=cell_ref,
             value=value,
             formatted_value=str(excel_cell.value),
+            alias=alias,  # Set the alias from our mapping
             formula=formula,  # Use the extracted formula string
             sheet_name=sheet_name,  # Set sheet_name directly on the Cell
             data_type=data_type,
@@ -318,8 +356,13 @@ class ExcelParser:
             if not cell.sheet_name:
                 cell.sheet_name = self.spreadsheet.active_sheet
                 
-            # Update dependencies for this cell, passing the workbook name
-            update_cell_dependencies(self.spreadsheet, cell, workbook_name)
+            # Update dependencies for this cell, passing the workbook name and alias mapping
+            update_cell_dependencies(
+                self.spreadsheet, 
+                cell, 
+                workbook_name, 
+                reverse_alias_mapping=self.reverse_alias_mapping
+            )
             
         logger.info("Cell dependency processing complete")
     
