@@ -11,7 +11,7 @@ from .models import Spreadsheet
 from parsers.excel_parser import ExcelParser
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
+# logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger(__name__)
 
 class ExcelDatabase:
@@ -198,13 +198,13 @@ class ExcelDatabase:
         Returns:
             dict: Dictionary representation of the spreadsheet
         """
-        # Create a list of cell references with sheet_name
-        cell_references = []
+        # Create a dictionary of cell references organized by sheet name
+        cell_references_by_sheet = {}
         for cell in spreadsheet.cells:
-            cell_references.append({
-                "cell_ref": cell.cell_reference,
-                "sheet_name": cell.sheet_name
-            })
+            sheet_name = cell.sheet_name
+            if sheet_name not in cell_references_by_sheet:
+                cell_references_by_sheet[sheet_name] = []
+            cell_references_by_sheet[sheet_name].append(cell.cell_reference)
             
         return {
             'id': str(spreadsheet.id),
@@ -214,7 +214,7 @@ class ExcelDatabase:
             'sheet_names': spreadsheet.sheet_names,
             'active_sheet': spreadsheet.active_sheet,
             'cell_count': len(spreadsheet.cells),
-            'cell_references': cell_references,
+            'cell_references': cell_references_by_sheet,
             'metadata': spreadsheet.metadata,
             'created_at': spreadsheet.created_at,
             'updated_at': spreadsheet.updated_at
