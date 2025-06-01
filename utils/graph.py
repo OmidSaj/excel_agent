@@ -43,34 +43,32 @@ class ComputeGraph:
             nx.DiGraph: The constructed graph
         """
         nodes = set()
-        for cell in self.spreadsheet_data['cell_references']:
-            cell_ref = cell['cell_ref']
-            sheet_name = cell['sheet_name']
-            
-            # Get detailed cell data from the database
-            cell_data = self.db.get_cell_data(cell_ref, sheet_name)
-            
-            if not cell_data:
-                continue
+        for sheet_name in self.spreadsheet_data['cell_references']:
+            for cell_ref in self.spreadsheet_data['cell_references'][sheet_name]:
+                # Get detailed cell data from the database
+                cell_data = self.db.get_cell_data(cell_ref, sheet_name)
                 
-            precedent_cells = cell_data.get('precedent_cells', [])
-            dependent_cells = cell_data.get('dependent_cells', [])
-            
-            # Create a node name that includes the sheet name and cell reference
-            node_name = f"{cell_data['sheet']}!{cell_ref}"
-            nodes.add(node_name)
-            
-            # Add node if it has any connections
-            if precedent_cells or dependent_cells:
-                self.graph.add_node(node_name, label=node_name)
+                if not cell_data:
+                    continue
+                    
+                precedent_cells = cell_data.get('precedent_cells', [])
+                dependent_cells = cell_data.get('dependent_cells', [])
                 
-            # Create edges from each precedent cell to this cell
-            for precedent_cell in precedent_cells:
-                precedent_node_name = f"{precedent_cell['sheet_name']}!{precedent_cell['cell_ref']}"
-                if precedent_node_name not in nodes:
-                    self.graph.add_node(precedent_node_name, label=precedent_node_name)
-                    nodes.add(precedent_node_name)
-                self.graph.add_edge(precedent_node_name, node_name)
+                # Create a node name that includes the sheet name and cell reference
+                node_name = f"{cell_data['sheet']}!{cell_ref}"
+                nodes.add(node_name)
+                
+                # Add node if it has any connections
+                if precedent_cells or dependent_cells:
+                    self.graph.add_node(node_name, label=node_name)
+                    
+                # Create edges from each precedent cell to this cell
+                for precedent_cell in precedent_cells:
+                    precedent_node_name = f"{precedent_cell['sheet_name']}!{precedent_cell['cell_ref']}"
+                    if precedent_node_name not in nodes:
+                        self.graph.add_node(precedent_node_name, label=precedent_node_name)
+                        nodes.add(precedent_node_name)
+                    self.graph.add_edge(precedent_node_name, node_name)
         return self.graph
     
     def create_layers(self) -> List[List[str]]:
@@ -90,13 +88,18 @@ class ComputeGraph:
             for node in layer:
                 self.graph.nodes[node]['layer'] = layer_index
 
+        # layers = [
+        #                 [
+        #                     {"sheet_name": sheet, "cell_ref": cell}
+        #                     for sheet, cell in (node.split("!") for node in layer)
+        #                 ]
+        #                 for layer in self.layers
+        #             ]
+
         layers = [
-                        [
-                            {"sheet_name": sheet, "cell_ref": cell}
-                            for sheet, cell in (node.split("!") for node in layer)
-                        ]
-                        for layer in self.layers
-                    ]
+            {(sheet, cell): {} for sheet, cell in (node.split("!") for node in layer)} for layer in self.layers
+        ]
+
         self.layers = layers
         return self.layers
     
