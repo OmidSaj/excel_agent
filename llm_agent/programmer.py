@@ -18,17 +18,20 @@ import pickle
 import yaml
 import os
 import logging
+from langfuse.callback import CallbackHandler
 
 class ProgrammerAgent:
     def __init__(self,
                  spread_sheet_path: str,
                  system_prompt: str| None = None,
                  openai_model: str = "gpt-4.1-mini",
+                 trace_with_langfuse: bool = False
                  ):
         
         self.spreadsheet_name = spread_sheet_path.split("/")[-1].split(".")[0]
         self.project_dir = os.path.dirname(os.path.abspath(spread_sheet_path))
         self.openai_model = openai_model
+        self.trace_with_langfuse = trace_with_langfuse
 
         self.load_variable_db()
         self.construct_system_prompt(system_prompt)
@@ -138,6 +141,8 @@ class ProgrammerAgent:
                
     async def initialize_coding_agent(self, thread_id="python_code_generation"):
         config = {"configurable": {"thread_id": thread_id}}
+        if self.trace_with_langfuse:
+            config["callbacks"] = [CallbackHandler()]
         user_query = self.build_coding_context()
         if "messages" not in self.app.get_state(config).values:
             user_inputs = {"messages": [
