@@ -44,6 +44,7 @@ class ExcelParser:
         self.file_path = file_path
         self.spreadsheet = None
         self.workbook = None
+        self.eval_workbook = None
         self.alias_mapping = {}
         self.reverse_alias_mapping = {}  # Maps aliases to cell references
     
@@ -75,6 +76,8 @@ class ExcelParser:
         
         # Open the workbook
         self.workbook = openpyxl.load_workbook(self.file_path, data_only=False)
+        # Load workbook with data_only to get computed values for formula cells
+        self.eval_workbook = openpyxl.load_workbook(self.file_path, data_only=True)
         
         # Build alias mapping from defined names
         self._build_alias_mapping()
@@ -288,21 +291,26 @@ class ExcelParser:
         """
         cell_ref = f"{get_column_letter(column+1)}{row+1}"
         
-        # Determine cell type and data type
-        
-        data_type = type(excel_cell.value).__name__
-        
-        # Extract formula if present
-        formula = None
-        
+        # Determine cell type
         cell_type = self.get_cell_type(excel_cell)
         
+        # Extract formula if present, and get computed value for formula cells
+        formula = None
         if cell_type == "formula":
             formula = excel_cell.value
+            # Get computed value from eval_workbook
+            eval_ws = self.eval_workbook[sheet_name]
+            eval_cell = eval_ws.cell(row=excel_cell.row, column=excel_cell.column)
+            computed_value = eval_cell.value
+        else:
+            computed_value = excel_cell.value
+        
+        # Determine data type based on computed value
+        data_type = type(computed_value).__name__
         
         # Create value dictionary - flexible to store different types
         value = {
-            "raw": excel_cell.value,
+            "raw": computed_value,
             "type": data_type
         }
         
@@ -317,7 +325,7 @@ class ExcelParser:
             alias = self.alias_mapping[sheet_name].get(cell_ref)
         
         # Log cell information
-        logger.debug(f"Cell {sheet_name}!{cell_ref}: type={cell_type}, data_type={data_type}, value={excel_cell.value}, alias={alias}")
+        logger.debug(f"Cell {sheet_name}!{cell_ref}: type={cell_type}, data_type={data_type}, value={computed_value}, alias={alias}")
         
         # Create the Cell document
         cell_doc = Cell(
@@ -325,7 +333,7 @@ class ExcelParser:
             column=column,
             cell_reference=cell_ref,
             value=value,
-            formatted_value=str(excel_cell.value),
+            formatted_value=str(computed_value),
             alias=alias,  # Set the alias from our mapping
             formula=formula,  # Use the extracted formula string
             sheet_name=sheet_name,  # Set sheet_name directly on the Cell
