@@ -1,42 +1,54 @@
+# beam_design/calculations.py
 """
-beam_design/calculations.py
----------------------------
-Contains core calculation functions for beam design checks.
+This module contains functions for beam design calculations including moment, shear, and capacity checks.
 """
 
 def calculate_moment(P_kip, beam_length_ft, area_load_q, trib_width_ft):
     """
-    Calculate the maximum moment (kip-ft) on the beam.
+    Calculate the moment at mid span in kip-feet.
     """
-    return P_kip * beam_length_ft / 4 + (area_load_q * trib_width_ft / 1000) * beam_length_ft ** 2 / 8
+    moment = P_kip * beam_length_ft / 4 + (area_load_q * trib_width_ft / 1000) * beam_length_ft ** 2 / 8
+    return moment
 
 def calculate_shear(P_kip, beam_length_ft, area_load_q, trib_width_ft):
     """
-    Calculate the maximum shear (kip) on the beam.
+    Calculate the shear force V in kips.
     """
-    return P_kip * beam_length_ft / 2 + area_load_q * trib_width_ft * beam_length_ft / 2 / 1000
+    shear = P_kip * beam_length_ft / 2 + area_load_q * trib_width_ft * beam_length_ft / 2 / 1000
+    return shear
 
-def get_section_capacity(section_type, section_database):
+def get_moment_capacity(section, section_data):
     """
-    Retrieve moment and shear capacity for a given section type.
+    Get the moment capacity for the selected section.
     """
-    return section_database[section_type]['M'], section_database[section_type]['V']
+    return section_data[section]
+
+def get_shear_capacity(section, section_shear_capacity_map):
+    """
+    Get the shear capacity for the selected section.
+    """
+    return section_shear_capacity_map[section]
 
 def check_load(P_kip, max_P):
     """
-    Check if the applied load exceeds the maximum allowable load.
+    Check if the load P exceeds the maximum allowable load.
     """
     return "Load is too much!" if P_kip > max_P else "Load below limit"
 
-def check_capacity(applied, capacity):
+def check_capacity(moment, moment_capacity):
     """
-    Check if the applied value is within the capacity.
-    Returns 'OK' if within, 'NG' if not.
+    Check if the moment capacity is sufficient.
     """
-    return 'OK' if capacity >= applied else 'NG'
+    return 'OK' if moment_capacity >= moment else 'NG'
 
-def design_status(moment_status, shear_status):
+def check_shear(shear, shear_capacity):
     """
-    Returns 'Pass' if both moment and shear status are OK, else 'Fail'.
+    Check if the shear force is within the shear capacity.
     """
-    return 'Pass' if (moment_status == 'OK' and shear_status == 'OK') else 'Fail'
+    return 'OK' if shear <= shear_capacity else 'NG'
+
+def get_design_status(moment_status, shear_status):
+    """
+    Determine the overall design status.
+    """
+    return 'Fail' if (moment_status == 'NG' or shear_status == 'NG') else 'Pass'
