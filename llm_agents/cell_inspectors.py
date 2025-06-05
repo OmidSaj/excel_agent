@@ -15,12 +15,14 @@ import asyncio
 from dotenv import load_dotenv
 import pickle
 import yaml
+from langfuse.callback import CallbackHandler
 
 class ExcelVariableAgent:
     def __init__(self,
                  spread_sheet_path: str,
                  system_prompt: str| None = None,
                  openai_model: str = "gpt-4.1-mini",
+                 trace_with_langfuse: bool = False
                  ):
         
         self.load_db(spread_sheet_path)
@@ -32,6 +34,7 @@ class ExcelVariableAgent:
         self.build_tools()
         self.build_agent()
         self.initialize_variable_database()
+        self.trace_with_langfuse = trace_with_langfuse
 
     def construct_system_prompt(self,custom_prompt:str|None=None):
         if custom_prompt is None:
@@ -52,11 +55,11 @@ class ExcelVariableAgent:
         """Initialize the variable database for different layers of the compute graph."""
         # Initialize
         spreadsheet_data = self.db.get_spreadsheet_data(name=self.spreadsheet_name, as_dict=True)
-        graph = ComputeGraph(spreadsheet_data, self.db)
+        self.graph = ComputeGraph(spreadsheet_data, self.db)
         # Build the graph and create layers
-        graph.build_graph()
-        graph.create_layers()
-        self.layers = graph.layers
+        self.graph.build_graph()
+        self.graph.create_layers()
+        self.layers = self.graph.layers
         self.variable_db = {}
         for layer in self.layers:
             for key in layer:
@@ -191,6 +194,9 @@ class ExcelVariableAgent:
                    
     async def ainvoke(self, cell_id,sheetname, thread_id="test"):
         config = {"configurable": {"thread_id": thread_id}}
+        if self.trace_with_langfuse:
+            config["callbacks"] = [CallbackHandler()]
+
         user_query = self.build_cell_processing_prompt(cell_id, sheetname)
         if "messages" not in self.app.get_state(config).values:
             user_inputs = {"messages": [
