@@ -82,4 +82,4 @@ I am planning to expand the capabilities of this project over time. Below is a l
 * The variable agent should be optimized to handle large data cells without formulas more effectively
 * To scale the programmer agent to massive spreadsheets, an agentic RAG pipeline can help to better manage large code context
 
-I am planning to evolve this project over time. Feel free to let me know if you have any feedback!
+I welcome any feedback or comments!
