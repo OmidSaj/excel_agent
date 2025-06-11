@@ -1,4 +1,5 @@
 # Excel Agents
+Automate Excel→Python code extraction using LLM agents
 
 ## Introduction
 I started this project to expeirment with a multi-agent workflow that parses information in different cells and uses multiple LLM API calls in proper sequence to convert an engineering calculation Excel spreadsheet into well-documented Python codebase.
@@ -13,6 +14,8 @@ To run this repo locally, you will need to follow these steps:
 - Open `.env.example` and add proper credentials for LangFuse and OpenAI APIs. Remove the .example extension after updating the contents of the file
 
 ## 2. Getting Started
+In what follows, an overview of this agentic workflow is provided. You may also refer to [this notebook](https://github.com/OmidSaj/excel_agent/blob/main/example.ipynb) to reproduce the results for an example spreadsheet. 
+
 ### 2.1. Define a Spreadsheet
 Start by specifying the path to your Excel spreadsheet as follows. The AI-generated content will be stored in the same directory. You can also use the following default example in the repo:
 ```python
