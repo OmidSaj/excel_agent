@@ -1,56 +1,58 @@
 # Excel Agents
-## Introduction
-This notebook will walk you through the steps to run a multi-agent workflow that parses information in different cells and uses a number of LLM api calls in proper sequence to convert an engineering calcuation excel spreadsheet into a well-documented python code. 
 
-## 1. Setup:
+## Introduction
+I started this project to expeirment with a multi-agent workflow that parses information in different cells and uses multiple LLM API calls in proper sequence to convert an engineering calculation Excel spreadsheet into well-documented Python codebase.
+
+## 1. Setup
 To run this repo locally, you will need to follow these steps:
 - Install [MongoDB Community Server](https://www.mongodb.com/try/download/community) (free)
-- Create a virtual python environment, cd to the project repository and run `pip install -r requirements.txt`
-- [OpenAI](https://openai.com/api/) API key. 
+- Create a virtual Python environment, cd to the project repository and run `pip install -r requirements.txt`
+- [OpenAI](https://openai.com/api/) API key
 - [LangFuse](https://langfuse.com/) API key (optional and free)
-- You need to make sure a MongoDB is running locally. Try running `mongosh` in the terminal. If you see the server id, that means the server is running.
-- Open `.env.example` and add proper credentials for LangFuse and OpenAI APIs. Remove .example extension after updating the contents of the file. 
+- Ensure MongoDB is running locally. Try running `mongosh` in the terminal. If you see the server ID, that means the server is running
+- Open `.env.example` and add proper credentials for LangFuse and OpenAI APIs. Remove the .example extension after updating the contents of the file
 
-## 2. Getting Started:
-### 2.1. Define a spreadsheet
-Start by specifying the path to your excel spreadsheet as follows. The AI-generated content will be stored in the same directory. You can also use the follwoing default example in the repo:
+## 2. Getting Started
+### 2.1. Define a Spreadsheet
+Start by specifying the path to your Excel spreadsheet as follows. The AI-generated content will be stored in the same directory. You can also use the following default example in the repo:
 ```python
 spreadsheet_name = 'simple_beam'
 path = f"examples/simple_beam/{spreadsheet_name}.xlsx"
 ```
 
-There are two main classes that allow us to orchestrate the agentic work flow. 
-1. `ExcelVariableAgent`: This class will preprocess an existing Excel spreadsheet, creates a database and dispatches a swarm of agents to study the contents of cells, create variable names for our python scriot and make small python code blocks for the contents of cells. 
+There are two main classes that allow us to orchestrate the agentic workflow:
+1. `ExcelVariableAgent`: This class will preprocess an existing Excel spreadsheet, create a database, and dispatch a swarm of agents to study the contents of cells, create variable names for our Python script, and make small Python code blocks for the contents of cells.
 
-2. `ProgrammerAgent`: Once the ExcelVariableAgent workers have finished creating a processed database of cell information, Programmer will start refactoring the python code blocks, scafolling a python codebase and finally creating an example script to test the codebase. 
+2. `ProgrammerAgent`: Once the ExcelVariableAgent workers have finished creating a processed database of cell information, the Programmer will start refactoring the Python code blocks, scaffolding a Python codebase, and finally creating an example script to test the codebase.
 
-### 2.2 ExcelVariableAgent
-Create an instance of the variable agent. Running the following cell will start extracting useful information from each cell, including the content, formulas, dependents, .... 
+### 2.2. ExcelVariableAgent
+Create an instance of the variable agent. Running the following cell will start extracting useful information from each cell, including the content, formulas, dependents, and more.
 
 ```python
 from llm_agents.cell_inspectors import ExcelVariableAgent
 
 variable_agent.graph.visualize(
-        figsize=(8, 12),
+    figsize=(8, 12),
     node_size=1200,
     title=spreadsheet_name,
     save_path=f"{variable_agent.project_dir}/computegraph_{spreadsheet_name}.png"
 )
 ```
-`variable_agent` will create a computational graph and starts processing cells from input root nodes to the output leaf nodes as shown in the following graph:
+
+The `variable_agent` will create a computational graph and start processing cells from input root nodes to the output leaf nodes as shown in the following graph:
 
 ![Computational Graph](assets/computational_graph.png)
 
-Now, with all the preprocessing out of the way, we can dipatch the army of LLMs to start inspeting cells. For each layer, we call all nodes simultaneously using the asyc functionailty in python.
+Now, with all the preprocessing out of the way, we can dispatch the army of LLMs to start inspecting cells. For each layer, we call all nodes simultaneously using the async functionality in Python.
 
-💸⚠️ Note that running the following cell will cost you money. There will be an API call for every node of your compute graph. If you don't want to make api calls, you can skip running the following cell as the programmer agent will load `variable_db_simple_beam.pkl` for this specific example from the project directory. 
+💸⚠️ Note that running the following cell will cost you money. There will be an API call for every node of your compute graph. If you don't want to make API calls, you can skip running the following cell as the programmer agent will load `variable_db_simple_beam.pkl` for this specific example from the project directory.
 
 ```python
 await variable_agent.orchestrate_variable_extraction()
 ```
 
-### 2.3 ProgrammerAgent
-While we created some code blocks for the contets of each cell in the previous part, the code blocks are not connected to form a complete and end to end graph. We collect the previous code blocks and present them to an object of the `ProgrammerAgent` to generate a higher quality code base for us.
+### 2.3. ProgrammerAgent
+While we created some code blocks for the contents of each cell in the previous part, the code blocks are not connected to form a complete and end-to-end graph. We collect the previous code blocks and present them to an object of the `ProgrammerAgent` to generate a higher quality codebase for us.
 
 ```python 
 from llm_agents.programmer import ProgrammerAgent
@@ -62,20 +64,22 @@ programmer = ProgrammerAgent(
 )
 ```
 
-After initialization, we can run our agent to creat our code base. `ProgrammerAgent` can create directories and save code as .py files. 
+After initialization, we can run our agent to create our codebase. The `ProgrammerAgent` can create directories and save code as .py files.
 
-💸⚠️ Running the following cell will also cost you money. Feel free to skip it and directly go to the spreadsheet directory to look at the AI generated content. 
+💸⚠️ Running the following cell will also cost you money. Feel free to skip it and directly go to the spreadsheet directory to look at the AI-generated content.
 
 ```python
 messages = await programmer.initialize_coding_agent()
 ```
 
-### 2.4. Test the final results
-Go to the spreadsheet project directory, and review the code! You will see that our LLM even created a readme file to document the project. Additionally, you can run the example.py generated by the LLM to test how it did. For this specific example, it is recommended to use a larger top-tier LLM with better reasonining capabilites. 
+### 2.4. Test the Final Results
+Go to the spreadsheet project directory and review the code! You will see that our LLM even created a README file to document the project. Additionally, you can run the example.py generated by the LLM to test how it performed. For this specific example, it is recommended to use a larger top-tier LLM with better reasoning capabilities.
 
-## 3. Future work
-I am planning to expand the capabilities of this project overtime. Below are a list of areas for improvement:
-* The proposed workflow will not work in cases where some cells reference to other spreadsheets. 
-* The agent does not have access to Macro VBA codes. Future work can be done to provide tools that add more context. 
-* The variable agent should be optimized to handle large data cells without formulas more effectively. 
-* To scale the programmer agent to massive spreadsheets, an agentic RAG pipeline can help to better manage large code context.
+## 3. Future Work
+I am planning to expand the capabilities of this project over time. Below is a list of areas for improvement:
+* The proposed workflow will not work in cases where some cells reference other spreadsheets
+* The agent does not have access to Macro VBA codes. Future work can be done to provide tools that add more context
+* The variable agent should be optimized to handle large data cells without formulas more effectively
+* To scale the programmer agent to massive spreadsheets, an agentic RAG pipeline can help to better manage large code context
+
+I am planning to evolve this project over time. Feel free to let me know if you have any feedback!
