@@ -8,7 +8,7 @@ To run this repo locally, you will need to follow these steps:
 - Install [MongoDB Community Server](https://www.mongodb.com/try/download/community) (free)
 - Create a virtual Python environment, cd to the project repository and run `pip install -r requirements.txt`
 - [OpenAI](https://openai.com/api/) API key
-- [LangFuse](https://langfuse.com/) API key (optional and free)
+- [LangFuse](https://langfuse.com/) API key (optional and free for limited use)
 - Ensure MongoDB is running locally. Try running `mongosh` in the terminal. If you see the server ID, that means the server is running
 - Open `.env.example` and add proper credentials for LangFuse and OpenAI APIs. Remove the .example extension after updating the contents of the file
 
