@@ -1,7 +1,6 @@
-![Excel Agents Logo](assets/logo.jpg)
-
 # Excel Agents
 Automate Excel→Python code extraction using LLM agents
+![Excel Agents Logo](assets/logo.jpg)
 
 ## Introduction
 I started this project to expeirment with a multi-agent workflow that parses information in different cells and uses multiple LLM API calls in proper sequence to convert an engineering calculation Excel spreadsheet into well-documented Python codebase.
