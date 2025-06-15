@@ -1,3 +1,5 @@
+![Excel Agents Logo](assets/logo.jpg)
+
 # Excel Agents
 Automate Excel→Python code extraction using LLM agents
 
