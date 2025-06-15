@@ -11,7 +11,6 @@ I started this project to expeirment with a multi-agent workflow that parses inf
 Using LLM agents with API calls will incur costs. The example provided in this documentation cost me less than $0.50 USD, using a mix of OpenAI’s GPT-4o and GPT-4o-mini in 2025.
 In the future, I plan to add a cost estimator to help users better understand the approximate API usage before dispatching agents. 
 Please be mindful of potential costs, especially when testing this codebase with large or custom spreadsheets. More details about API pricing and usage are provided in the next section of this documentation.
-⸻
 
 ## 1. Setup
 To run this repo locally, you will need to follow these steps:
