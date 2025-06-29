@@ -2,11 +2,6 @@
 
 This repository provides a simple Python-based calculator for checking the moment and shear design of a simply supported beam subjected to a midspan point load and a uniform area load. The code is organized for clarity and easy extension.
 
-## Demo
-Watch a demonstration of the beam design calculator in action:
-
-![Demo Video](https://github.com/OmidSaj/excel_agent/blob/main/assets/demo.mp4)
-
 ## Features
 - Calculates midspan moment and support shear for a simply supported beam.
 - Checks the calculated moment and shear against section capacities from a predefined database.
