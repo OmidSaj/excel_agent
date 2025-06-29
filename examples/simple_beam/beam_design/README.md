@@ -5,7 +5,7 @@ This repository provides a simple Python-based calculator for checking the momen
 ## Demo
 Watch a demonstration of the beam design calculator in action:
 
-![Demo Video](../assets/demo.mp4)
+![Demo Video](https://github.com/OmidSaj/excel_agent/blob/main/assets/demo.mp4)
 
 ## Features
 - Calculates midspan moment and support shear for a simply supported beam.
