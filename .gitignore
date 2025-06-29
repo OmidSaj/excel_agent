@@ -2,3 +2,7 @@
 *.pyc
 /data
 *.pyc
+examples/simple_beam/.DS_Store
+assets/.DS_Store
+examples/simple_beam/~$simple_beam.xlsx
+examples/simple_beam/~$simple_beam.xlsx
